@@ -1,17 +1,18 @@
 import { Readable } from 'node:stream';
-import cfg from './config.js';
 
 // A normal-looking browser UA; many CDNs reject the default Node fetch UA.
 const UA =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 ' +
   '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
-function proxify(absUrl, base) {
-  return `${base}/proxy?url=${encodeURIComponent(absUrl)}`;
+function proxify(absUrl) {
+  // Relative URL: the browser/hls.js resolves it against whatever host it used
+  // to reach us, so there's no dependence on a guessed server IP.
+  return `/proxy?url=${encodeURIComponent(absUrl)}`;
 }
 
 // Rewrite every URL inside an HLS playlist so it also flows through us.
-function rewriteM3U8(text, sourceUrl, base) {
+function rewriteM3U8(text, sourceUrl) {
   return text
     .split(/\r?\n/)
     .map((line) => {
@@ -21,7 +22,7 @@ function rewriteM3U8(text, sourceUrl, base) {
         // Tags can carry URIs (EXT-X-KEY, EXT-X-MEDIA, EXT-X-MAP…).
         return line.replace(/URI="([^"]+)"/g, (m, uri) => {
           try {
-            return `URI="${proxify(new URL(uri, sourceUrl).href, base)}"`;
+            return `URI="${proxify(new URL(uri, sourceUrl).href)}"`;
           } catch {
             return m;
           }
@@ -29,7 +30,7 @@ function rewriteM3U8(text, sourceUrl, base) {
       }
       // A segment or sub-playlist URL line.
       try {
-        return proxify(new URL(t, sourceUrl).href, base);
+        return proxify(new URL(t, sourceUrl).href);
       } catch {
         return line;
       }
@@ -51,7 +52,6 @@ export async function handleProxy(req, res) {
   }
   if (!/^https?:$/.test(urlObj.protocol)) return res.status(400).send('bad scheme');
 
-  const base = cfg.serverUrl;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 20000);
   res.on('close', () => controller.abort());
@@ -79,7 +79,7 @@ export async function handleProxy(req, res) {
       clearTimeout(timeout);
       res.set('Content-Type', 'application/vnd.apple.mpegurl');
       res.set('Cache-Control', 'no-cache');
-      return res.send(rewriteM3U8(text, upstream.url || target, base));
+      return res.send(rewriteM3U8(text, upstream.url || target));
     }
 
     // Binary passthrough for segments / keys, preserving range semantics.

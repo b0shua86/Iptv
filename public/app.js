@@ -76,18 +76,28 @@
     highlight();
 
     if (hls) { hls.destroy(); hls = null; }
-    const isHls = /\.m3u8(\?|$)/i.test(c.url);
+    // Resolve server-relative URLs against the page origin (works no matter
+    // which address you opened the player on).
+    const src = c.url.startsWith('/') ? location.origin + c.url : c.url;
+    const isHls = /\.m3u8(\?|$)/i.test(src);
+    setStatus(`Loading "${c.name}"…`);
 
     if (isHls && window.Hls && Hls.isSupported()) {
-      hls = new Hls({ enableWorker: true, lowLatencyMode: false });
-      hls.loadSource(c.url);
+      hls = new Hls({ enableWorker: true, lowLatencyMode: false, manifestLoadingTimeOut: 15000 });
+      hls.loadSource(src);
       hls.attachMedia(video);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => setStatus(`Playing "${c.name}"`));
       hls.on(Hls.Events.ERROR, (_e, data) => {
-        if (data.fatal) setStatus(`Stream error on "${c.name}" (${data.type})`);
+        if (data.fatal) {
+          setStatus(`Stream error on "${c.name}" — ${data.type}/${data.details}`);
+          if (data.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError();
+        }
       });
     } else {
-      // Native playback: Safari/HLS, or progressive MP4 / MPEG-TS from local media.
-      video.src = c.url;
+      // Native playback: Safari/HLS, or progressive MP4 from local media.
+      video.src = src;
+      video.onerror = () => setStatus(`Cannot play "${c.name}" in this browser`);
+      video.onplaying = () => setStatus(`Playing "${c.name}"`);
     }
     video.play().catch(() => {});
   }

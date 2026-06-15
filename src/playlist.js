@@ -11,9 +11,11 @@ function extinf({ id = '', logo = '', group = '', name }) {
   return `#EXTINF:-1 ${attrs},${name}`;
 }
 
-// Build the combined M3U that TVs / IPTV apps load.
-export async function buildPlaylist() {
-  const base = cfg.serverUrl;
+// Build the combined M3U that TVs / IPTV apps load. `base` is the absolute URL
+// the client used to reach us (e.g. http://192.168.1.50:8409), so the embedded
+// links always point back at a reachable address.
+export async function buildPlaylist(base) {
+  base = (base || cfg.serverUrl).replace(/\/+$/, '');
   const live = await getLiveChannels();
   const media = getMediaItems();
 

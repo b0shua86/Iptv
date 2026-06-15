@@ -18,10 +18,17 @@ app.use((req, res, next) => {
   next();
 });
 
+// Absolute base URL the client actually used to reach us — far more reliable
+// than guessing the Mac's LAN IP from its network interfaces.
+function reqBase(req) {
+  const proto = String(req.headers['x-forwarded-proto'] || req.protocol || 'http').split(',')[0];
+  return `${proto}://${req.headers.host}`;
+}
+
 // --- Playlists / guide ---
 app.get(['/playlist.m3u', '/playlist.m3u8'], async (req, res) => {
   try {
-    const body = await buildPlaylist();
+    const body = await buildPlaylist(reqBase(req));
     res.set('Content-Type', 'audio/x-mpegurl');
     res.send(body);
   } catch (err) {
@@ -46,14 +53,15 @@ app.get(['/proxy', '/proxy.m3u8'], handleProxy);
 app.get('/api/channels', async (req, res) => {
   const live = await getLiveChannels();
   const media = getMediaItems();
-  const base = cfg.serverUrl;
 
+  // Relative URLs: the browser resolves them against the page's own origin, so
+  // they always point at a reachable address regardless of the Mac's IPs.
   const loop = (cfg.loopChannels || []).map((c) => ({
     name: c.name,
     group: c.group || 'Local Channels',
     logo: c.logo || '',
     type: 'loop',
-    url: `${base}/channel/${encodeURIComponent(c.id)}`,
+    url: `/channel/${encodeURIComponent(c.id)}`,
   }));
 
   const vod = media.map((m) => ({
@@ -61,7 +69,7 @@ app.get('/api/channels', async (req, res) => {
     group: m.group,
     logo: '',
     type: 'vod',
-    url: `${base}/media/${m.id}`,
+    url: `/media/${m.id}`,
   }));
 
   // Route live streams through the proxy so the browser isn't blocked by CORS.
@@ -74,11 +82,11 @@ app.get('/api/channels', async (req, res) => {
       group: c.group,
       logo: c.logo,
       type: 'live',
-      url: `${base}/proxy.m3u8?url=${encodeURIComponent(c.url)}`,
+      url: `/proxy.m3u8?url=${encodeURIComponent(c.url)}`,
     }));
 
   res.json({
-    serverUrl: base,
+    serverUrl: reqBase(req),
     liveError: live.error,
     channels: [...loop, ...vod, ...liveList],
   });
