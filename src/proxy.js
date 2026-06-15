@@ -77,6 +77,15 @@ export async function handleProxy(req, res) {
     if (looksLikePlaylist) {
       const text = await upstream.text();
       clearTimeout(timeout);
+      if (!upstream.ok) {
+        console.warn(`[proxy] upstream HTTP ${upstream.status} for ${target}`);
+        return res.status(502).send(`# upstream returned HTTP ${upstream.status}`);
+      }
+      if (!/#EXTM3U/.test(text)) {
+        // Geo-blocks / dead streams often answer 200 with an HTML or empty body.
+        console.warn(`[proxy] not an HLS manifest (content-type: ${ct || 'none'}) for ${target}`);
+        return res.status(502).send('# upstream did not return an HLS playlist (likely geo-blocked or offline)');
+      }
       res.set('Content-Type', 'application/vnd.apple.mpegurl');
       res.set('Cache-Control', 'no-cache');
       return res.send(rewriteM3U8(text, upstream.url || target));

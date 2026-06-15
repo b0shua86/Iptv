@@ -88,9 +88,17 @@
       hls.attachMedia(video);
       hls.on(Hls.Events.MANIFEST_PARSED, () => setStatus(`Playing "${c.name}"`));
       hls.on(Hls.Events.ERROR, (_e, data) => {
-        if (data.fatal) {
-          setStatus(`Stream error on "${c.name}" — ${data.type}/${data.details}`);
-          if (data.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError();
+        if (!data.fatal) return;
+        setStatus(`Stream error on "${c.name}" — ${data.type}/${data.details}`);
+        if (data.type === Hls.ErrorTypes.MEDIA_ERROR) { hls.recoverMediaError(); return; }
+        // Ask our proxy directly so we can show its human-readable reason.
+        if (src.startsWith(location.origin)) {
+          fetch(src).then(async (r) => {
+            if (!r.ok) {
+              const t = (await r.text()).replace(/^#\s*/, '').trim();
+              setStatus(`"${c.name}": ${t || 'HTTP ' + r.status}`);
+            }
+          }).catch(() => {});
         }
       });
     } else {
