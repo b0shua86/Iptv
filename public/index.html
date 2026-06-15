@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mac IPTV</title>
+  <link rel="stylesheet" href="/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js"></script>
+</head>
+<body>
+  <div id="app">
+    <aside id="sidebar">
+      <div class="side-head">
+        <h1>Mac IPTV</h1>
+        <input id="search" type="text" placeholder="Search channels…" autocomplete="off" />
+        <select id="groupFilter"><option value="">All groups</option></select>
+        <div id="status" class="status"></div>
+      </div>
+      <ul id="channelList" tabindex="0"></ul>
+    </aside>
+
+    <main id="player">
+      <video id="video" controls autoplay playsinline></video>
+      <div id="nowPlaying" class="now-playing">
+        <span id="npName">Select a channel</span>
+        <span id="npHint" class="hint">↑/↓ or Ch +/- to change · Enter to play</span>
+      </div>
+    </main>
+  </div>
+  <script src="/app.js"></script>
+</body>
+</html>

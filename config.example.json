@@ -1,0 +1,35 @@
+{
+  "port": 8409,
+  "host": "0.0.0.0",
+
+  "// serverUrl": "Base URL the TVs use to reach this Mac. Leave empty to auto-detect your LAN IP (recommended). Example: http://192.168.1.50:8409",
+  "serverUrl": "",
+
+  "// mediaDir": "Absolute path to the folder of media you want to stream from this Mac mini.",
+  "mediaDir": "/Users/CHANGE_ME/Movies",
+
+  "includeLive": true,
+  "livePlaylistUrl": "https://raw.githubusercontent.com/Free-TV/IPTV/master/playlist.m3u8",
+  "liveRefreshMinutes": 360,
+
+  "// liveCountries": "Optional. Only keep live channels whose group-title matches one of these (case-insensitive). Empty = keep all.",
+  "liveCountries": [],
+
+  "transcode": true,
+  "ffmpegPath": "ffmpeg",
+  "ffprobePath": "ffprobe",
+
+  "// directPlayExtensions": "Files with these extensions are streamed as-is (seekable). Everything else is transcoded on the fly when transcode=true.",
+  "directPlayExtensions": [".mp4", ".m4v", ".mov"],
+
+  "// loopChannels": "Optional always-on channels. Each loops the videos in a folder forever, like a real TV station. path is relative to mediaDir (or absolute).",
+  "loopChannels": [
+    {
+      "id": "local-movies",
+      "name": "My Movies 24/7",
+      "path": ".",
+      "logo": "",
+      "group": "Local Channels"
+    }
+  ]
+}
