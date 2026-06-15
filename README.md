@@ -92,6 +92,14 @@ You get a channel list with search + groups and a video player. Use the remote's
 
 Open `http://192.168.1.50:8409/` in any browser for the same web player.
 
+> **How the web player plays live channels:** browsers block cross-origin
+> streams (CORS), so the web player routes live channels through the server's
+> built-in `/proxy` endpoint — your Mac fetches the stream (with a browser
+> User-Agent) and re-serves it to the browser. IPTV apps on the TV play the
+> stream URLs directly and don't need the proxy. Note: a few Free-TV entries
+> are YouTube/Twitch *page* links rather than direct streams — those are hidden
+> from the web player (they still appear for IPTV apps that can resolve them).
+
 ---
 
 ## Streaming your own media

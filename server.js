@@ -7,6 +7,7 @@ import { startMediaRescan, getMediaItems, scanMedia } from './src/mediaLibrary.j
 import { buildPlaylist } from './src/playlist.js';
 import { buildEpg } from './src/epg.js';
 import { handleMedia, handleLoopChannel } from './src/stream.js';
+import { handleProxy } from './src/proxy.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -38,6 +39,9 @@ app.get('/epg.xml', (req, res) => {
 app.get('/media/:id', handleMedia);
 app.get('/channel/:id', handleLoopChannel);
 
+// CORS-bypassing stream proxy for live channels (used by the web player).
+app.get(['/proxy', '/proxy.m3u8'], handleProxy);
+
 // --- JSON API for the built-in web player ---
 app.get('/api/channels', async (req, res) => {
   const live = await getLiveChannels();
@@ -60,13 +64,18 @@ app.get('/api/channels', async (req, res) => {
     url: `${base}/media/${m.id}`,
   }));
 
-  const liveList = live.channels.map((c) => ({
-    name: c.name,
-    group: c.group,
-    logo: c.logo,
-    type: 'live',
-    url: c.url,
-  }));
+  // Route live streams through the proxy so the browser isn't blocked by CORS.
+  // Skip non-stream page URLs (YouTube/Twitch pages can't play in a <video>).
+  const isPlayable = (u) => !/youtube\.com|youtu\.be|twitch\.tv/i.test(u);
+  const liveList = live.channels
+    .filter((c) => isPlayable(c.url))
+    .map((c) => ({
+      name: c.name,
+      group: c.group,
+      logo: c.logo,
+      type: 'live',
+      url: `${base}/proxy.m3u8?url=${encodeURIComponent(c.url)}`,
+    }));
 
   res.json({
     serverUrl: base,
