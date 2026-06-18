@@ -3,3 +3,8 @@ config.json
 .loop-*.txt
 *.log
 .DS_Store
+
+# Jellyfin/Threadfin runtime data (created on first `docker compose up`)
+jellyfin-stack/jellyfin/
+jellyfin-stack/cache/
+jellyfin-stack/threadfin/

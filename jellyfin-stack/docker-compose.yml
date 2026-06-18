@@ -1,0 +1,48 @@
+# Jellyfin (media server + Live TV) + Threadfin (IPTV playlist filter/proxy).
+#
+#   Start:   docker compose up -d
+#   Logs:    docker compose logs -f
+#   Stop:    docker compose down
+#   Update:  docker compose pull && docker compose up -d
+#
+# After it's up:
+#   Jellyfin  -> http://<mac-ip>:8096   (set up libraries + Live TV)
+#   Threadfin -> http://<mac-ip>:34400  (pick which live channels to keep)
+# See README.md in this folder for the full walkthrough.
+
+services:
+  jellyfin:
+    image: jellyfin/jellyfin:latest
+    container_name: jellyfin
+    restart: unless-stopped
+    ports:
+      - "8096:8096"      # web UI / API
+      - "8920:8920"      # optional HTTPS
+      - "7359:7359/udp"  # client auto-discovery on the LAN
+      - "1900:1900/udp"  # DLNA discovery
+    volumes:
+      - ./jellyfin/config:/config
+      - ./jellyfin/cache:/cache
+      - ${MEDIA_DIR}:/media:ro   # your videos, read-only
+    environment:
+      - TZ=${TZ}
+    networks:
+      - iptv
+
+  threadfin:
+    image: fyb3roptik/threadfin:latest
+    container_name: threadfin
+    restart: unless-stopped
+    ports:
+      - "34400:34400"
+    volumes:
+      - ./threadfin/conf:/home/threadfin/conf
+    environment:
+      - TZ=${TZ}
+      - THREADFIN_PORT=34400
+    networks:
+      - iptv
+
+networks:
+  iptv:
+    driver: bridge
